@@ -64,7 +64,7 @@ describe('Core_datachange', function () {
     var output = null;
 
     handsontable();
-    Handsontable.PluginHooks.add("onChange", function (changes) {
+    Handsontable.hooks.add("onChange", function (changes) {
       output = changes;
     });
     setDataAtCell(1, 2, "test");
@@ -81,7 +81,7 @@ describe('Core_datachange', function () {
 
     handsontable({
       onChange: function () {
-        output = this.rootElement[0];
+        output = this.rootElement;
       }
     });
     setDataAtCell(0, 0, "test");

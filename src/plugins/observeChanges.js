@@ -1,7 +1,9 @@
 (function HandsontableObserveChanges() {
 
-  Handsontable.PluginHooks.add('afterLoadData', init);
-  Handsontable.PluginHooks.add('afterUpdateSettings', init);
+  Handsontable.hooks.add('afterLoadData', init);
+  Handsontable.hooks.add('afterUpdateSettings', init);
+
+  Handsontable.hooks.register('afterChangesObserved');
 
   function init() {
     var instance = this;
@@ -114,7 +116,7 @@
     function removeLengthRelatedPatches(rawPatches){
       return rawPatches.filter(function(patch){
         return !/[/]length/ig.test(patch.path);
-      })
+      });
     }
 
     function parsePath(path){
@@ -122,7 +124,7 @@
       return {
         row: parseInt(match[1], 10),
         col: /^\d*$/.test(match[2]) ? parseInt(match[2], 10) : match[2]
-      }
+      };
     }
   }
 

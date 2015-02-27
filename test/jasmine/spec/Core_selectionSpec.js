@@ -30,7 +30,7 @@ describe('Core_selection', function () {
     var output = null;
 
     handsontable();
-    Handsontable.PluginHooks.add('onSelection', function (r, c) {
+    Handsontable.hooks.add('onSelection', function (r, c) {
       output = [r, c];
     });
     selectCell(1, 2);
@@ -44,7 +44,7 @@ describe('Core_selection', function () {
 
     handsontable({
       onSelection: function () {
-        output = this.rootElement[0];
+        output = this.rootElement;
       }
     });
     selectCell(0, 0);
@@ -57,7 +57,7 @@ describe('Core_selection', function () {
 
     handsontable({
       onSelectionByProp: function () {
-        output = this.rootElement[0];
+        output = this.rootElement;
       }
     });
     selectCell(0, 0);
@@ -72,7 +72,8 @@ describe('Core_selection', function () {
     selectCell(0, 0);
 
     keyDown('enter');
-    $("html").triggerHandler('mouseup');
+//    $("html").triggerHandler('mouseup');
+    $("html").simulate('mouseup');
     textarea.focus();
 
     expect(document.activeElement).toBe(textarea[0]);
@@ -83,7 +84,8 @@ describe('Core_selection', function () {
     handsontable();
     selectCell(0, 0);
 
-    $("html").triggerHandler('mousedown');
+//    $("html").triggerHandler('mousedown');
+    $('html').simulate('mousedown');
 
     expect(getSelected()).toBeUndefined();
   });
@@ -94,7 +96,8 @@ describe('Core_selection', function () {
     });
     selectCell(0, 0);
 
-    $("html").triggerHandler('mousedown');
+//    $("html").triggerHandler('mousedown');
+    $("html").simulate('mousedown');
 
     expect(getSelected()).toEqual([0, 0, 0, 0]);
   });
@@ -107,7 +110,7 @@ describe('Core_selection', function () {
     });
     selectCell(0, 0);
 
-    textarea.trigger('mousedown');
+    textarea.simulate('mousedown');
     textarea.focus();
 
     expect(document.activeElement.id).toEqual('test_textarea');
@@ -124,18 +127,21 @@ describe('Core_selection', function () {
     selectCell(0, 0);
 
     textarea.focus();
-    textarea.trigger('mousedown');
-    textarea.trigger('mouseup');
+    textarea.simulate('mousedown');
+    textarea.simulate('mouseup');
 
     textarea.on('keydown', function (event) {
       keyPressed = event.keyCode;
     });
 
     var LETTER_a_KEY = 97;
-    var event = $.Event('keydown');
-    event.keyCode = LETTER_a_KEY;
+//    var event = $.Event('keydown');
+//    event.keyCode = LETTER_a_KEY;
 
-    $(document.activeElement).trigger(event);
+//    $(document.activeElement).trigger(event);
+    $(document.activeElement).simulate('keydown',{
+      keyCode: LETTER_a_KEY
+    });
 
     //textarea should receive the event and be an active element
     expect(keyPressed).toEqual(LETTER_a_KEY);
@@ -159,18 +165,20 @@ describe('Core_selection', function () {
     document.activeElement.value = 'Foo';
 
     textarea.focus();
-    textarea.trigger('mousedown');
-    textarea.trigger('mouseup');
+    textarea.simulate('mousedown');
+    textarea.simulate('mouseup');
 
     textarea.on('keydown', function (event) {
       keyPressed = event.keyCode;
     });
 
     var LETTER_a_KEY = 97;
-    var event = $.Event('keydown');
-    event.keyCode = LETTER_a_KEY;
+//    var event = $.Event('keydown');
+//    event.keyCode = LETTER_a_KEY;
 
-    $(document.activeElement).trigger(event);
+    $(document.activeElement).simulate('keydown',{
+      keyCode: LETTER_a_KEY
+    });
 
     //textarea should receive the event and be an active element
     expect(keyPressed).toEqual(LETTER_a_KEY);
@@ -355,13 +363,12 @@ describe('Core_selection', function () {
       }
     });
 
-    this.$container.find('tr:eq(0) td:eq(0)').trigger('mousedown');
-    this.$container.find('tr:eq(0) td:eq(1)').trigger('mouseenter');
-    this.$container.find('tr:eq(1) td:eq(3)').trigger('mouseenter');
+    this.$container.find('tr:eq(0) td:eq(0)').simulate('mousedown');
+    this.$container.find('tr:eq(0) td:eq(1)').simulate('mouseover');
+    this.$container.find('tr:eq(1) td:eq(3)').simulate('mouseover');
 
-    var mouseup = $.Event('mouseup');
-    mouseup.which = 1; //LMB
-    this.$container.find('tr:eq(1) td:eq(3)').trigger(mouseup);
+
+    this.$container.find('tr:eq(1) td:eq(3)').simulate('mouseup');
 
     expect(getSelected()).toEqual([0, 0, 1, 3]);
     expect(tick).toEqual(3);
@@ -397,8 +404,10 @@ describe('Core_selection', function () {
 
     expect(document.activeElement.nodeName).toBe('INPUT');
 
-    var keyDownEvent = $.Event('keydown', {ctrlKey: true, metaKey: true});
-    $input.trigger(keyDownEvent);
+//    var keyDownEvent = $.Event('keydown', {ctrlKey: true, metaKey: true});
+//    $input.trigger(keyDownEvent);
+
+    $input.simulate('keydown',{ctrlKey: true, metaKey: true});
 
     expect(document.activeElement.nodeName).toBe('INPUT');
 
@@ -406,4 +415,150 @@ describe('Core_selection', function () {
 
 
   });
+
+  it("should select the entire column after column header is clicked", function(){
+    handsontable({
+      width: 200,
+      height: 100,
+      startRows: 50,
+      startCols: 5,
+      colHeaders: true
+    });
+
+    this.$container.find('thead th:eq(0)').simulate('mousedown');
+    expect(getSelected()).toEqual([0, 0, 49, 0]);
+  });
+
+  it("should select the entire column after column header is clicked (in fixed rows/cols corner)", function(){
+    handsontable({
+      width: 200,
+      height: 100,
+      startRows: 50,
+      startCols: 5,
+      colHeaders: true,
+      rowHeaders: true,
+      fixedRowsTop: 2,
+      fixedColumnsLeft: 2
+    });
+
+    this.$container.find('.ht_clone_corner thead th:eq(1)').simulate('mousedown');
+    expect(getSelected()).toEqual([0, 0, 49, 0]);
+  });
+
+  it("should allow to scroll the table when a whole column is selected and table is longer than it's container", function () {
+    var errCount = 0;
+    $(window).on("error.selectionTest", function () {
+      errCount++;
+    });
+
+    var onAfterScrollVertically = jasmine.createSpy('onAfterScrollVertically');
+
+    var hot = handsontable({
+      height: 100,
+      width: 300,
+      startRows: 100,
+      startCols: 5,
+      colHeaders: true,
+      rowHeaders: true,
+      afterScrollVertically: onAfterScrollVertically
+    });
+
+    this.$container[0].scrollTop = 0;
+
+    this.$container.find('thead tr:eq(0) th:eq(2)').simulate('mousedown');
+    this.$container.find('thead tr:eq(0) th:eq(2)').simulate('mouseup');
+
+    this.$container[0].scrollTop = 120;
+
+    waits(100);
+
+    runs(function () {
+      expect(errCount).toEqual(0); // expect no errors to be thrown
+
+      $(window).off("error.selectionTest");
+    });
+
+  });
+
+  it("should scroll to the end of the selection, when selecting cells using the keyboard", function () {
+    var hot = handsontable({
+      height: 300,
+      width: 300,
+      startRows: 50,
+      startCols: 50,
+      colHeaders: true,
+      rowHeaders: true,
+      fixedRowsTop: 2,
+      fixedColumnsLeft: 2
+    });
+
+    this.$container[0].scrollTop = 100;
+    selectCell(1, 3);
+    keyDownUp('arrow_down');
+    expect(this.$container[0].scrollTop).toEqual(0);
+    this.$container[0].scrollTop = 100;
+    selectCell(1, 3);
+    keyDownUp('shift+arrow_down');
+    expect(this.$container[0].scrollTop).toEqual(0);
+
+    this.$container[0].scrollLeft = 100;
+    selectCell(3, 1);
+    keyDownUp('arrow_right');
+    expect(this.$container[0].scrollLeft).toEqual(0);
+    this.$container[0].scrollLeft = 100;
+    selectCell(3, 1);
+    keyDownUp('shift+arrow_right');
+    expect(this.$container[0].scrollLeft).toEqual(0);
+
+    var lastVisibleColumn = hot.view.wt.wtTable.getLastVisibleColumn();
+    selectCell(3, lastVisibleColumn);
+    keyDownUp('arrow_right');
+    expect(hot.view.wt.wtTable.getLastVisibleColumn()).toEqual(lastVisibleColumn + 1);
+    keyDownUp('arrow_right');
+    expect(hot.view.wt.wtTable.getLastVisibleColumn()).toEqual(lastVisibleColumn + 2);
+    keyDownUp('shift+arrow_right');
+    expect(hot.view.wt.wtTable.getLastVisibleColumn()).toEqual(lastVisibleColumn + 3);
+
+    var lastVisibleRow = hot.view.wt.wtTable.getLastVisibleRow();
+    selectCell(lastVisibleRow, 3);
+    keyDownUp('arrow_down');
+    expect(hot.view.wt.wtTable.getLastVisibleRow()).toEqual(lastVisibleRow + 1);
+    keyDownUp('arrow_down');
+    expect(hot.view.wt.wtTable.getLastVisibleRow()).toEqual(lastVisibleRow + 2);
+    keyDownUp('shift+arrow_down');
+    expect(hot.view.wt.wtTable.getLastVisibleRow()).toEqual(lastVisibleRow + 3);
+
+  });
+
+  it("should select the entire row after row header is clicked", function(){
+    handsontable({
+      startRows: 5,
+      startCols: 5,
+      colHeaders: true,
+      rowHeaders: true
+    });
+
+    this.$container.find('tr:eq(2) th:eq(0)').simulate('mousedown');
+    expect(getSelected()).toEqual([1, 0, 1, 4]);
+
+  });
+
+  it("should select the entire row of a partially fixed table after row header is clicked", function(){
+    handsontable({
+      startRows: 5,
+      startCols: 5,
+      colHeaders: true,
+      rowHeaders: true,
+      fixedRowsTop: 2,
+      fixedColumnsLeft: 2
+    });
+
+    this.$container.find('tr:eq(2) th:eq(0)').simulate('mousedown');
+    expect(getSelected()).toEqual([1, 0, 1, 4]);
+    this.$container.find('tr:eq(3) th:eq(0)').simulate('mousedown');
+    expect(getSelected()).toEqual([2, 0, 2, 4]);
+
+  });
+
+
 });

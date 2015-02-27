@@ -106,7 +106,7 @@ describe('CopyPaste plugin', function () {
   describe("setting values copyable", function () {
     it("should set copyable text when selecting a single cell and hitting ctrl", function () {
       handsontable({
-        data: createSpreadsheetData(2, 2)
+        data: Handsontable.helper.createSpreadsheetData(2, 2)
       });
 
       var copyPasteTextarea = $('textarea.copyPaste');
@@ -116,13 +116,13 @@ describe('CopyPaste plugin', function () {
       selectCell(0, 0);
       keyDownUp(Handsontable.helper.keyCode.CONTROL_LEFT);
 
-      expect(copyPasteTextarea.val()).toEqual('A0\n');
+      expect(copyPasteTextarea.val()).toEqual('A1\n');
 
     });
 
     it("should set copyable text when selecting a single cell and hitting left command", function () {
       handsontable({
-        data: createSpreadsheetData(2, 2)
+        data: Handsontable.helper.createSpreadsheetData(2, 2)
       });
 
       var copyPasteTextarea = $('textarea.copyPaste');
@@ -132,13 +132,13 @@ describe('CopyPaste plugin', function () {
       selectCell(0, 0);
       keyDownUp(Handsontable.helper.keyCode.COMMAND_LEFT);
 
-      expect(copyPasteTextarea.val()).toEqual('A0\n');
+      expect(copyPasteTextarea.val()).toEqual('A1\n');
 
     });
 
     it("should set copyable text when selecting a single cell and hitting right command", function () {
       handsontable({
-        data: createSpreadsheetData(2, 2)
+        data: Handsontable.helper.createSpreadsheetData(2, 2)
       });
 
       var copyPasteTextarea = $('textarea.copyPaste');
@@ -148,13 +148,13 @@ describe('CopyPaste plugin', function () {
       selectCell(0, 0);
       keyDownUp(Handsontable.helper.keyCode.COMMAND_RIGHT);
 
-      expect(copyPasteTextarea.val()).toEqual('A0\n');
+      expect(copyPasteTextarea.val()).toEqual('A1\n');
 
     });
 
     it("should set copyable text when selecting multiple cells and hitting ctrl", function () {
       handsontable({
-        data: createSpreadsheetData(2, 2)
+        data: Handsontable.helper.createSpreadsheetData(2, 2)
       });
 
       var copyPasteTextarea = $('textarea.copyPaste');
@@ -164,13 +164,13 @@ describe('CopyPaste plugin', function () {
       selectCell(0, 0, 1, 0);
       keyDownUp(Handsontable.helper.keyCode.CONTROL_LEFT);
 
-      expect(copyPasteTextarea.val()).toEqual('A0\nA1\n');
+      expect(copyPasteTextarea.val()).toEqual('A1\nA2\n');
 
     });
 
     it("should set copyable text when selecting all cells with CTRL+A", function () {
       handsontable({
-        data: createSpreadsheetData(2, 2)
+        data: Handsontable.helper.createSpreadsheetData(2, 2)
       });
 
       var copyPasteTextarea = $('textarea.copyPaste');
@@ -178,15 +178,14 @@ describe('CopyPaste plugin', function () {
       expect(copyPasteTextarea.val().length).toEqual(0);
 
       selectCell(0, 0);
-      keyDown(Handsontable.helper.keyCode.CONTROL_LEFT);
-      $(document.activeElement).trigger($.Event('keydown', {keyCode: Handsontable.helper.keyCode.A, ctrlKey: true}));
 
+      $(document.activeElement).simulate('keydown', {keyCode: Handsontable.helper.keyCode.A, ctrlKey: true});
       waits(0);
 
       runs(function () {
         expect(getSelected()).toEqual([0, 0, 1, 1]);
 
-        expect(copyPasteTextarea.val()).toEqual('A0\tB0\nA1\tB1\n');
+        expect(copyPasteTextarea.val()).toEqual('A1\tB1\nA2\tB2\n');
       });
 
     });
@@ -194,20 +193,23 @@ describe('CopyPaste plugin', function () {
     it("should not throw error when no cell is selected (#1221)", function () {
 
       handsontable({
-        data: createSpreadsheetData(2, 2)
+        data: Handsontable.helper.createSpreadsheetData(2, 2)
       });
 
       selectCell(0, 0);
       deselectCell();
 
       function keydownCtrl(){
-        $(document).trigger($.Event('keydown', {
+//        $(document).trigger($.Event('keydown', {
+//          keyCode: Handsontable.helper.keyCode.COMMAND_LEFT
+//        }));
+        $(document).simulate('keydown', {
           keyCode: Handsontable.helper.keyCode.COMMAND_LEFT
-        }));
+        });
       }
 
-      expect(keydownCtrl).not.toThrow();  //expect no to throw any exception
-
+      // expect no to throw any exception
+      expect(keydownCtrl).not.toThrow();
     });
 
     it("should set copyable text when selecting a single cell with specified type and hitting ctrl (#1300)", function () {
@@ -231,7 +233,6 @@ describe('CopyPaste plugin', function () {
       keyDownUp(Handsontable.helper.keyCode.CONTROL_LEFT);
 
       expect(copyPasteTextarea.val()).toEqual('A\t1\nB\t2\n');
-
     });
 
 

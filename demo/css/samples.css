@@ -14,6 +14,11 @@ body {
   height: 100%;
 }
 
+sup {
+  font-size: 80%;
+  background: lightgoldenrodyellow;
+}
+
 .clear {
   clear: left;
 }
@@ -101,6 +106,8 @@ global menu
   display: table-cell;
   vertical-align: top;
   padding: 20px 10px 20px 20px;
+  z-index: 12;
+  position: relative;
 }
 
 #global-menu-clone ul {
@@ -263,13 +270,27 @@ ul ul {
   border: 1px solid #ECECEC;
   background-color: #FAFAFA;
   border-radius: 3px;
-  font-size: 12px;
+  font-size: 90%;
   font-family: Consolas, Courier, monospace;
 }
 
 .descLayout pre code {
   white-space: pre-wrap;
   padding: 3px 5px;
+}
+
+kbd {
+  background-color: #e7e7e7;
+  background-image: -moz-linear-gradient(#fefefe, #e7e7e7);
+  background-image: -webkit-linear-gradient(#fefefe, #e7e7e7);
+  background-image: linear-gradient(#fefefe, #e7e7e7);
+  background-repeat: repeat-x;
+  border-radius: 2px;
+  border: 1px solid #cfcfcf;
+  color: #000;
+  padding: 3px 5px 0 5px;
+  font-family: Consolas, "Liberation Mono", Menlo, Courier, monospace;
+  display: inline-block;
 }
 
 /**
@@ -312,6 +333,11 @@ ul ul {
   padding: 2px 4px;
 }
 
+.warning li,
+.warning p:last-child {
+  margin-bottom: 0;
+}
+
 /**
  * Handsontable
  */
@@ -319,7 +345,6 @@ ul ul {
 .handsontable {
   margin-bottom: 10px;
   color: #000;
-  z-index: 2;
   font-size: 12px;
 }
 
@@ -370,13 +395,15 @@ dl dd {
 #githubWatch {
   position: absolute;
   top: 31px;
-  left: 320px;
+  left: 322px;
+  z-index: 10;
 }
 
 #githubFork {
   position: absolute;
   top: 31px;
-  left: 430px;
+  left: 432px;
+  z-index: 10;
 }
 
 #domainNotice {
@@ -411,6 +438,7 @@ body.home pre {
   position: absolute;
   top: 20px;
   right: 20px;
+  z-index: 11;
 }
 
 button,

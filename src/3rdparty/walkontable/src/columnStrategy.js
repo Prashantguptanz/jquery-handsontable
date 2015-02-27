@@ -9,13 +9,13 @@ function WalkontableColumnStrategy(instance, containerSizeFn, sizeAtIndex, strat
   var size
     , i = 0;
 
-  WalkontableCellStrategy.apply(this, arguments);
-
+  this.instance = instance;
   this.containerSizeFn = containerSizeFn;
   this.cellSizesSum = 0;
   this.cellSizes = [];
   this.cellStretch = [];
   this.cellCount = 0;
+  this.visibleCellCount = 0;
   this.remainingSize = 0;
   this.strategy = strategy;
 
@@ -25,8 +25,8 @@ function WalkontableColumnStrategy(instance, containerSizeFn, sizeAtIndex, strat
     if (size === void 0) {
       break; //total columns exceeded
     }
-    if (this.cellSizesSum >= this.getContainerSize(this.cellSizesSum + size)) {
-      break; //total width exceeded
+    if (this.cellSizesSum < this.getContainerSize()) {
+      this.visibleCellCount++;
     }
     this.cellSizes.push(size);
     this.cellSizesSum += size;
@@ -35,13 +35,15 @@ function WalkontableColumnStrategy(instance, containerSizeFn, sizeAtIndex, strat
     i++;
   }
 
-  var containerSize = this.getContainerSize(this.cellSizesSum);
+  var containerSize = this.getContainerSize();
   this.remainingSize = this.cellSizesSum - containerSize;
   //negative value means the last cell is fully visible and there is some space left for stretching
   //positive value means the last cell is not fully visible
 }
 
-WalkontableColumnStrategy.prototype = new WalkontableCellStrategy();
+WalkontableColumnStrategy.prototype.getContainerSize = function () {
+  return typeof this.containerSizeFn === 'function' ? this.containerSizeFn() : this.containerSizeFn;
+};
 
 WalkontableColumnStrategy.prototype.getSize = function (index) {
   return this.cellSizes[index] + (this.cellStretch[index] || 0);
@@ -49,8 +51,9 @@ WalkontableColumnStrategy.prototype.getSize = function (index) {
 
 WalkontableColumnStrategy.prototype.stretch = function () {
   //step 2 - apply stretching strategy
-  var containerSize = this.getContainerSize(this.cellSizesSum)
+  var containerSize = this.getContainerSize()
     , i = 0;
+
   this.remainingSize = this.cellSizesSum - containerSize;
 
   this.cellStretch.length = 0; //clear previous stretch
@@ -76,4 +79,25 @@ WalkontableColumnStrategy.prototype.stretch = function () {
       this.remainingSize = 0;
     }
   }
+};
+
+WalkontableColumnStrategy.prototype.countVisible = function () {
+  return this.visibleCellCount;
+};
+
+WalkontableColumnStrategy.prototype.isLastIncomplete = function () {
+
+  var firstRow = this.instance.wtTable.getFirstVisibleRow();
+  var lastCol = this.instance.wtTable.getLastVisibleColumn();
+  var cell = this.instance.wtTable.getCell(new WalkontableCellCoords(firstRow, lastCol));
+  var cellOffset = Handsontable.Dom.offset(cell);
+  var cellWidth = Handsontable.Dom.outerWidth(cell);
+  var cellEnd = cellOffset.left + cellWidth;
+
+  var viewportOffsetLeft = this.instance.wtScrollbars.vertical.getScrollPosition();
+  var viewportWitdh = this.instance.wtViewport.getViewportWidth();
+  var viewportEnd = viewportOffsetLeft + viewportWitdh;
+
+
+  return viewportEnd >= cellEnd;
 };

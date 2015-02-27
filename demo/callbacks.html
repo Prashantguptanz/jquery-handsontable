@@ -8,8 +8,8 @@
   Loading Handsontable (full distribution that includes all dependencies apart from jQuery)
   -->
   <script data-jsfiddle="common" src="../lib/jquery.min.js"></script>
-  <script data-jsfiddle="common" src="../dist/jquery.handsontable.full.js"></script>
-  <link data-jsfiddle="common" rel="stylesheet" media="screen" href="../dist/jquery.handsontable.full.css">
+  <script data-jsfiddle="common" src="../dist/handsontable.full.js"></script>
+  <link data-jsfiddle="common" rel="stylesheet" media="screen" href="../dist/handsontable.full.css">
 
   <!--
   Loading demo dependencies. They are used here only to enhance the examples on this page
@@ -60,18 +60,22 @@
 
           <p>
             This page shows usage of some callbacks available in Handsontable. Full list of callbacks is available in <a
-            href="https://github.com/warpech/jquery-handsontable">README.md</a>.
+            href="https://github.com/handsontable/handsontable">README.md</a>.
           </p>
 
           <p>
             If you require a new callback to be added to Handsontable, please open an <a
-            href="https://github.com/warpech/jquery-handsontable/issues">Issue</a>.
+            href="https://github.com/handsontable/handsontable/issues">Issue</a>.
+          </p>
+
+          <p>
+            Note that some checkboxes below are initially unchecked (not all callbacks are displayed on this page by default).
           </p>
 
           <div id="example1"></div>
 
           <p>
-            <button name="dump" data-dump="#example1" title="Prints current data source to Firebug/Chrome Dev Tools">
+            <button name="dump" data-dump="#example1" data-instance="hot" title="Prints current data source to Firebug/Chrome Dev Tools">
               Dump data to console
             </button>
           </p>
@@ -83,7 +87,7 @@
           </h3>
 
           <div id="example1_events"
-               style="width: 400px; height: 250px; overflow: scroll; background-color: #fdfdfd; font-size: 11px"></div>
+               style="height: 250px; overflow: scroll; background-color: #fdfdfd; font-size: 11px"></div>
 
           <p>Choose events to be logged:</p>
 
@@ -101,14 +105,19 @@
 
           <script data-jsfiddle="example1">
             var data = [
-              ["", "Maserati", "Mazda", "Mercedes", "Mini", "Mitsubishi"],
-              ["2009", 0, 2941, 4303, 354, 5814],
-              ["2010", 5, 2905, 2867, 412, 5284],
-              ["2011", 4, 2517, 4822, 552, 6127],
-              ["2012", 2, 2422, 5399, 776, 4151]
-            ];
+                ['', 'Maserati', 'Mazda', 'Mercedes', 'Mini', 'Mitsubishi'],
+                ['2009', 0, 2941, 4303, 354, 5814],
+                ['2010', 3, 2905, 2867, 412, 5284],
+                ['2011', 4, 2517, 4822, 552, 6127],
+                ['2012', 2, 2422, 5399, 776, 4151]
+              ],
+              example1 = document.getElementById('example1'),
+              config,
+              $hooksList,
+              hooks,
+              hot;
 
-            var config = {
+            config = {
               data: data,
               minRows: 5,
               minCols: 6,
@@ -118,45 +127,46 @@
               contextMenu: true
             };
 
-            var $hooksList = $('#hooksList');
-            var hooks = Handsontable.PluginHooks.hooks;
-            for (var hook in hooks) {
-              if (hooks.hasOwnProperty(hook)) {
-                config[hook] = (function (hook) {
-                  var checked = '';
-                  if (hook === 'afterLoadData' || hook === 'afterChange' || hook === 'beforeChange' || hook === 'afterSelection' || hook === 'afterSelectionEnd') {
-                    checked = 'checked';
+            $hooksList = $('#hooksList');
+            hooks = Handsontable.hooks.getRegistered();
 
-                  }
-                  $hooksList.append('<li><label><input type="checkbox" ' + checked + ' id="check_' + hook + '"> ' + hook + '</label></li>');
-                  return function () {
-                    log_events(hook, arguments);
-                  }
-                })(hook);
+            hooks.forEach(function(hook) {
+              var checked = '';
+
+              if (hook !== 'modifyRowHeight' && hook !== 'modifyRow' && hook !== 'modifyCol' &&
+                  hook !== 'afterRenderer' && hook !== 'beforeGetCellMeta' && hook !== 'afterGetCellMeta') {
+                checked = 'checked';
+
               }
-            }
+              $hooksList.append('<li><label><input type="checkbox" ' + checked + ' id="check_' + hook + '"> ' + hook + '</label></li>');
+              config[hook] = function() {
+                log_events(hook, arguments);
+              }
+            });
 
             var start = (new Date()).getTime();
             var i = 0;
+            var timer;
+            var example1_events = document.getElementById("example1_events");
 
             function log_events(event, data) {
               if (document.getElementById('check_' + event).checked) {
-                var now = (new Date()).getTime();
-                var diff = now - start;
+                var now = (new Date()).getTime(),
+                  diff = now - start,
+                  vals, str, div, text;
 
-                var vals = [
+                vals = [
                   i,
                   "@" + numeral(diff / 1000).format('0.000'),
                   "[" + event + "]"
                 ];
 
-                var str;
                 for (var d = 0; d < data.length; d++) {
                   try {
                     str = JSON.stringify(data[d]);
                   }
                   catch (e) {
-                    str = data[d].toString(); //JSON.stringify breaks on circular reference to a HTML node
+                    str = data[d].toString(); // JSON.stringify breaks on circular reference to a HTML node
                   }
 
                   if (str === void 0) {
@@ -178,22 +188,29 @@
                     "[" + event + "]",
                     data);
                 }
+                div = document.createElement("DIV");
+                text = document.createTextNode(vals.join(" "));
 
-                $("#example1_events").prepend(
-                    $("<div/>").text(vals.join(" "))
-                  )
-                  .scrollTop(0);
+                div.appendChild(text);
+                example1_events.appendChild(div);
+                clearTimeout(timer);
+                timer = setTimeout(function() {
+                  example1_events.scrollTop = example1_events.scrollHeight;
+                }, 10);
+
                 i++;
               }
             }
 
-            $('#example1').handsontable(config);
+            example1 = document.getElementById('example1');
+            hot = new Handsontable(example1,config);
 
             $('#check_select_all').click(function () {
               var state = this.checked;
+
               $('input[type=checkbox]').each(function () {
                 if (state === true) {
-                  if (this.id === 'check_beforeSet' || this.id === 'check_beforeGet') {
+                  if (this.id === 'check_modifyRow') {
                     return; //too much noise in the log
                   }
                 }
@@ -211,8 +228,7 @@
       </div>
     </div>
 
-        <div class="footer-text">Handsontable &copy; 2012 Marcin Warpechowski and contributors.<br> Code and documentation
-          licensed under the The MIT License.
+        <div class="footer-text">
         </div>
       </div>
 

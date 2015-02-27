@@ -1,9 +1,4 @@
-/**
- * DOM helper optimized for maximum performance
- * It is recommended for Handsontable plugins and renderers, because it is much faster than jQuery
- * @type {WalkonableDom}
- */
-Handsontable.Dom = new WalkontableDom();
+Handsontable.helper = {};
 
 /**
  * Returns true if keyCode represents a printable character
@@ -73,7 +68,6 @@ Handsontable.helper.stringify = function (value) {
     case 'string':
     case 'number':
       return value + '';
-      break;
 
     case 'object':
       if (value === null) {
@@ -83,10 +77,8 @@ Handsontable.helper.stringify = function (value) {
         return value.toString();
       }
       break;
-
     case 'undefined':
       return '';
-      break;
 
     default:
       return value.toString();
@@ -111,6 +103,48 @@ Handsontable.helper.spreadsheetColumnLabel = function (index) {
 };
 
 /**
+ * Creates 2D array of Excel-like values "A1", "A2", ...
+ * @param rowCount
+ * @param colCount
+ * @returns {Array}
+ */
+Handsontable.helper.createSpreadsheetData = function(rowCount, colCount) {
+  rowCount = typeof rowCount === 'number' ? rowCount : 100;
+  colCount = typeof colCount === 'number' ? colCount : 4;
+
+  var rows = []
+    , i
+    , j;
+
+  for (i = 0; i < rowCount; i++) {
+    var row = [];
+    for (j = 0; j < colCount; j++) {
+      row.push(Handsontable.helper.spreadsheetColumnLabel(j) + (i + 1));
+    }
+    rows.push(row);
+  }
+  return rows;
+};
+
+Handsontable.helper.createSpreadsheetObjectData = function(rowCount, colCount) {
+  rowCount = typeof rowCount === 'number' ? rowCount : 100;
+  colCount = typeof colCount === 'number' ? colCount : 4;
+
+  var rows = []
+    , i
+    , j;
+
+  for (i = 0; i < rowCount; i++) {
+    var row = {};
+    for (j = 0; j < colCount; j++) {
+      row['prop' + j] = Handsontable.helper.spreadsheetColumnLabel(j) + (i + 1);
+    }
+    rows.push(row);
+  }
+  return rows;
+};
+
+/**
  * Checks if value of n is a numeric one
  * http://jsperf.com/isnan-vs-isnumeric/4
  * @param n
@@ -125,28 +159,6 @@ Handsontable.helper.isNumeric = function (n) {
            t == 'object' ? !!n && typeof n.valueOf() == "number" && !(n instanceof Date) : false;
 };
 
-Handsontable.helper.isArray = function (obj) {
-  return Object.prototype.toString.call(obj).match(/array/i) !== null;
-};
-
-/**
- * Checks if child is a descendant of given parent node
- * http://stackoverflow.com/questions/2234979/how-to-check-in-javascript-if-one-element-is-a-child-of-another
- * @param parent
- * @param child
- * @returns {boolean}
- */
-Handsontable.helper.isDescendant = function (parent, child) {
-  var node = child.parentNode;
-  while (node != null) {
-    if (node == parent) {
-      return true;
-    }
-    node = node.parentNode;
-  }
-  return false;
-};
-
 /**
  * Generates a random hex string. Used as namespace for Handsontable instance events.
  * @return {String} - 16 character random string: "92b1bfc74ec4"
@@ -158,7 +170,7 @@ Handsontable.helper.randomString = function () {
 /**
  * Inherit without without calling parent constructor, and setting `Child.prototype.constructor` to `Child` instead of `Parent`.
  * Creates temporary dummy function to call it as constructor.
- * Described in ticket: https://github.com/warpech/jquery-handsontable/pull/516
+ * Described in ticket: https://github.com/handsontable/handsontable/pull/516
  * @param  {Object} Child  child class
  * @param  {Object} Parent parent class
  * @return {Object}        extended Child
@@ -183,9 +195,51 @@ Handsontable.helper.extend = function (target, extension) {
   }
 };
 
+/**
+ * Perform deep extend of a target object with extension's own properties
+ * @param {Object} target An object that will receive the new properties
+ * @param {Object} extension An object containing additional properties to merge into the target
+ */
+Handsontable.helper.deepExtend = function (target, extension) {
+  for (var key in extension) {
+    if (extension.hasOwnProperty(key)) {
+      if (extension[key] && typeof extension[key] === 'object') {
+        if (!target[key]) {
+          if (Array.isArray(extension[key])) {
+            target[key] = [];
+          }
+          else {
+            target[key] = {};
+          }
+        }
+        Handsontable.helper.deepExtend(target[key], extension[key]);
+      }
+      else {
+        target[key] = extension[key];
+      }
+    }
+  }
+};
+
+/**
+ * Perform deep clone of an object
+ * WARNING! Only clones JSON properties. Will cause error when `obj` contains a function, Date, etc
+ * @param {Object} obj An object that will be cloned
+ * @return {Object}
+ */
+Handsontable.helper.deepClone = function (obj) {
+  if (typeof obj === "object") {
+    return JSON.parse(JSON.stringify(obj));
+  }
+  else {
+    return obj;
+  }
+};
+
 Handsontable.helper.getPrototypeOf = function (obj) {
   var prototype;
 
+  /* jshint ignore:start */
   if(typeof obj.__proto__ == "object"){
     prototype = obj.__proto__;
   } else {
@@ -206,6 +260,7 @@ Handsontable.helper.getPrototypeOf = function (obj) {
     prototype = constructor ? constructor.prototype : null; // needed for IE
 
   }
+  /* jshint ignore:end */
 
   return prototype;
 };
@@ -243,7 +298,7 @@ Handsontable.helper.translateRowsToColumns = function (input) {
         output.push([]);
         olen++;
       }
-      output[j].push(input[i][j])
+      output[j].push(input[i][j]);
     }
   }
   return output;
@@ -277,7 +332,7 @@ Handsontable.helper.isInput = function (element) {
   var inputs = ['INPUT', 'SELECT', 'TEXTAREA'];
 
   return inputs.indexOf(element.nodeName) > -1;
-}
+};
 
 /**
  * Determines if the given DOM element is an input field placed OUTSIDE of HOT.
@@ -295,6 +350,7 @@ Handsontable.helper.keyCode = {
   MOUSE_MIDDLE: 2,
   BACKSPACE: 8,
   COMMA: 188,
+  INSERT: 45,
   DELETE: 46,
   END: 35,
   ENTER: 13,
@@ -343,20 +399,10 @@ Handsontable.helper.isObject = function (obj) {
   return Object.prototype.toString.call(obj) == '[object Object]';
 };
 
-/**
- * Determines whether given object is an Array.
- * Note: String is not an Array
- * @param {*} obj
- * @returns {boolean}
- */
-Handsontable.helper.isArray = function(obj){
-  return Array.isArray ? Array.isArray(obj) : Object.prototype.toString.call(obj) == '[object Array]';
-};
-
 Handsontable.helper.pivot = function (arr) {
   var pivotedArr = [];
 
-  if(!arr || arr.length == 0 || !arr[0] || arr[0].length == 0){
+  if(!arr || arr.length === 0 || !arr[0] || arr[0].length === 0){
     return pivotedArr;
   }
 
@@ -413,7 +459,7 @@ Handsontable.helper.cellMethodLookupFactory = function (methodName, allowUndefin
         return;                       //method not found
 
       }
-      else if (properties.hasOwnProperty(methodName) && properties[methodName]) { //check if it is own and is not empty
+      else if (properties.hasOwnProperty(methodName) && properties[methodName] !== void 0) { //check if it is own and is not empty
 
         return properties[methodName];  //method defined directly
 
@@ -445,7 +491,8 @@ Handsontable.helper.cellMethodLookupFactory = function (methodName, allowUndefin
     var type = Handsontable.cellTypes[typeName];
 
     if(typeof type == 'undefined'){
-      throw new Error('You declared cell type "' + typeName + '" as a string that is not mapped to a known object. Cell type must be an object or a string mapped to an object in Handsontable.cellTypes');
+      throw new Error('You declared cell type "' + typeName + '" as a string that is not mapped to a known object. ' +
+                      'Cell type must be an object or a string mapped to an object in Handsontable.cellTypes');
     }
 
     return type;
@@ -453,6 +500,73 @@ Handsontable.helper.cellMethodLookupFactory = function (methodName, allowUndefin
 
 };
 
-Handsontable.helper.toString = function (obj) {
-  return '' + obj;
+Handsontable.helper.isMobileBrowser = function (userAgent) {
+  if(!userAgent) {
+    userAgent = navigator.userAgent;
+  }
+  return (/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(userAgent));
+
+  // Logic for checking the specific mobile browser
+  //
+  /* var type = type != void 0 ? type.toLowerCase() : ''
+    , result;
+  switch(type) {
+    case '':
+      result = (/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent));
+      return result;
+      break;
+    case 'ipad':
+      return navigator.userAgent.indexOf('iPad') > -1;
+      break;
+    case 'android':
+      return navigator.userAgent.indexOf('Android') > -1;
+      break;
+    case 'windows':
+      return navigator.userAgent.indexOf('IEMobile') > -1;
+      break;
+    default:
+      throw new Error('Invalid isMobileBrowser argument');
+      break;
+  } */
+};
+
+Handsontable.helper.isTouchSupported = function () {
+  return ('ontouchstart' in window);
+};
+
+Handsontable.helper.stopPropagation = function (event) {
+  // ie8
+  //http://msdn.microsoft.com/en-us/library/ie/ff975462(v=vs.85).aspx
+  if (typeof (event.stopPropagation) === 'function') {
+    event.stopPropagation();
+  }
+  else {
+    event.cancelBubble = true;
+  }
+};
+
+Handsontable.helper.pageX = function (event) {
+  if (event.pageX) {
+    return event.pageX;
+  }
+
+  var scrollLeft = Handsontable.Dom.getWindowScrollLeft();
+  var cursorX = event.clientX + scrollLeft;
+
+  return cursorX;
+};
+
+Handsontable.helper.pageY = function (event) {
+  if (event.pageY) {
+    return event.pageY;
+  }
+
+  var scrollTop = Handsontable.Dom.getWindowScrollTop();
+  var cursorY = event.clientY + scrollTop;
+
+  return cursorY;
+};
+
+Handsontable.helper.isWebComponent = function (element) {
+  return element.shadowRoot ? true : false;
 };

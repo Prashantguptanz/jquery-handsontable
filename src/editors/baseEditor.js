@@ -23,8 +23,7 @@
       this._closeCallback(result);
       this._closeCallback = null;
     }
-
-  }
+  };
 
   BaseEditor.prototype.init = function(){};
 
@@ -76,7 +75,20 @@
 
   BaseEditor.prototype.saveValue = function (val, ctrlDown) {
     if (ctrlDown) { //if ctrl+enter and multiple cells selected, behave like Excel (finish editing and apply to all cells)
-      var sel = this.instance.getSelected();
+      var sel = this.instance.getSelected()
+        , tmp;
+
+      if(sel[0] > sel[2]) {
+        tmp = sel[0];
+        sel[0] = sel[2];
+        sel[2] = tmp;
+      }
+      if(sel[1] > sel[3]) {
+        tmp = sel[1];
+        sel[1] = sel[3];
+        sel[3] = tmp;
+      }
+
       this.instance.populateFromArray(sel[0], sel[1], val, sel[2], sel[3], 'edit');
     }
     else {
@@ -89,7 +101,7 @@
       return;
     }
 
-    this.instance.view.scrollViewport({row: this.row, col: this.col});
+    this.instance.view.scrollViewport(new WalkontableCellCoords(this.row, this.col));
     this.instance.view.render();
 
     this.state = Handsontable.EditorState.EDITING;
@@ -106,14 +118,16 @@
   };
 
   BaseEditor.prototype.finishEditing = function (restoreOriginalValue, ctrlDown, callback) {
+    var _this = this,
+      val;
 
     if (callback) {
       var previousCloseCallback = this._closeCallback;
+
       this._closeCallback = function (result) {
-        if(previousCloseCallback){
+        if (previousCloseCallback) {
           previousCloseCallback(result);
         }
-
         callback(result);
       };
     }
@@ -123,42 +137,44 @@
     }
 
     if (this.state == Handsontable.EditorState.VIRGIN) {
-      var that = this;
-      setTimeout(function () {
-        that._fireCallbacks(true);
-      });
+      this.instance._registerTimeout(setTimeout(function () {
+        _this._fireCallbacks(true);
+      }, 0));
+
       return;
     }
 
     if (this.state == Handsontable.EditorState.EDITING) {
-
       if (restoreOriginalValue) {
-
         this.cancelChanges();
-        return;
+        this.instance.view.render();
 
+        return;
+      }
+
+      if (this.instance.getSettings().trimWhitespace) {
+        val = [
+          [String.prototype.trim.call(this.getValue())] // String.prototype.trim is defined in Walkontable polyfill.js
+        ];
+      } else {
+        val = [
+          [this.getValue()]
+        ];
       }
 
 
-      var val = [
-        [String.prototype.trim.call(this.getValue())] //String.prototype.trim is defined in Walkontable polyfill.js
-      ];
-
       this.state = Handsontable.EditorState.WAITING;
-
       this.saveValue(val, ctrlDown);
 
-      if(this.instance.getCellValidator(this.cellProperties)){
-        var that = this;
-        this.instance.addHookOnce('afterValidate', function (result) {
-          that.state = Handsontable.EditorState.FINISHED;
-          that.discardEditor(result);
+      if (this.instance.getCellValidator(this.cellProperties)) {
+        this.instance.addHookOnce('postAfterValidate', function (result) {
+          _this.state = Handsontable.EditorState.FINISHED;
+          _this.discardEditor(result);
         });
       } else {
         this.state = Handsontable.EditorState.FINISHED;
         this.discardEditor(true);
       }
-
     }
   };
 
@@ -171,25 +187,19 @@
     if (this.state !== Handsontable.EditorState.FINISHED) {
       return;
     }
-
-    if (result === false && this.cellProperties.allowInvalid !== true) { //validator was defined and failed
-
+    // validator was defined and failed
+    if (result === false && this.cellProperties.allowInvalid !== true) {
       this.instance.selectCell(this.row, this.col);
       this.focus();
-
       this.state = Handsontable.EditorState.EDITING;
-
       this._fireCallbacks(false);
     }
     else {
       this.close();
       this._opened = false;
-
       this.state = Handsontable.EditorState.VIRGIN;
-
       this._fireCallbacks(true);
     }
-
   };
 
   BaseEditor.prototype.isOpened = function(){

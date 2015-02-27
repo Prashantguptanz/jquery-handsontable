@@ -69,7 +69,7 @@ describe('Core_validate', function () {
     });
   });
 
-  it('beforeValidate should can manipulate value', function () {
+  it('beforeValidate can manipulate value', function () {
     var result = null;
     var onAfterValidate = jasmine.createSpy('onAfterValidate');
 
@@ -122,7 +122,7 @@ describe('Core_validate', function () {
     }, 'Cell validation', 1000);
 
     runs(function () {
-      expect(onAfterValidate).toHaveBeenCalledWith(true, 123, 2, 'id', undefined);
+      expect(onAfterValidate).toHaveBeenCalledWith(true, 123, 2, 'id', undefined, undefined);
     });
   });
 
@@ -146,7 +146,7 @@ describe('Core_validate', function () {
     }, 'Cell validation', 1000);
 
     runs(function () {
-      expect(onAfterValidate).toHaveBeenCalledWith(false, 'test', 2, 'id', undefined);
+      expect(onAfterValidate).toHaveBeenCalledWith(false, 'test', 2, 'id', undefined, undefined);
     });
   });
 
@@ -183,7 +183,7 @@ describe('Core_validate', function () {
     var onAfterValidate = jasmine.createSpy('onAfterValidate');
 
     var hot = handsontable({
-      data: createSpreadsheetData(2, 2),
+      data: Handsontable.helper.createSpreadsheetData(2, 2),
       validator: function (value, callb) {
         if (value == "B1") {
           callb(false)
@@ -216,7 +216,7 @@ describe('Core_validate', function () {
     var onAfterValidate = jasmine.createSpy('onAfterValidate');
 
     handsontable({
-      data: createSpreadsheetData(2, 2),
+      data: Handsontable.helper.createSpreadsheetData(2, 2),
       validator: function (value, callb) {
         if (value == 'test') {
           callb(false)
@@ -256,7 +256,7 @@ describe('Core_validate', function () {
     };
 
     handsontable({
-      data: createSpreadsheetData(2, 2),
+      data: Handsontable.helper.createSpreadsheetData(2, 2),
       type: 'numeric',
       validator: validator,
       afterValidate: onAfterValidate
@@ -295,7 +295,7 @@ describe('Core_validate', function () {
     var onAfterValidate = jasmine.createSpy('onAfterValidate');
 
     var hot = handsontable({
-      data: createSpreadsheetData(2, 2),
+      data: Handsontable.helper.createSpreadsheetData(2, 2),
       afterValidate: onAfterValidate
     });
 
@@ -338,9 +338,9 @@ describe('Core_validate', function () {
     var onAfterValidate = jasmine.createSpy('onAfterValidate');
 
     var hot = handsontable({
-      data: createSpreadsheetData(2, 2),
+      data: Handsontable.helper.createSpreadsheetData(2, 2),
       validator: function (value, callb) {
-        if (value == 'A0') {
+        if (value == 'A1') {
           callb(false)
         }
         else {
@@ -380,7 +380,7 @@ describe('Core_validate', function () {
     var validatedChanges;
 
     handsontable({
-      data: createSpreadsheetData(5, 2),
+      data: Handsontable.helper.createSpreadsheetData(5, 2),
       allowInvalid: false,
       validator: function (value, callb) {
         setTimeout(function () {
@@ -400,9 +400,9 @@ describe('Core_validate', function () {
     });
 
     populateFromArray(0, 0, [
-      ['A0-new'],
+      ['A1-new'],
       ['fail'],
-      ['A2-new']
+      ['A3-new']
     ]);
 
     waitsFor(function () {
@@ -411,11 +411,11 @@ describe('Core_validate', function () {
 
     runs(function () {
       expect(validatedChanges.length).toEqual(2);
-      expect(validatedChanges[0]).toEqual([0, 0, 'A0', 'A0-new']);
-      expect(validatedChanges[1]).toEqual([2, 0, 'A2', 'A2-new']);
-      expect(getDataAtCell(0, 0)).toEqual('A0-new');
-      expect(getDataAtCell(1, 0)).toEqual('A1');
-      expect(getDataAtCell(2, 0)).toEqual('A2-new');
+      expect(validatedChanges[0]).toEqual([0, 0, 'A1', 'A1-new']);
+      expect(validatedChanges[1]).toEqual([2, 0, 'A3', 'A3-new']);
+      expect(getDataAtCell(0, 0)).toEqual('A1-new');
+      expect(getDataAtCell(1, 0)).toEqual('A2');
+      expect(getDataAtCell(2, 0)).toEqual('A3-new');
       expect(getCellMeta(0, 0).valid).toBe(true);
       expect(getCellMeta(1, 0).valid).toBe(true);
       expect(getCellMeta(2, 0).valid).toBe(true);
@@ -427,7 +427,7 @@ describe('Core_validate', function () {
     var onBeforeChange = jasmine.createSpy('onBeforeChange');
 
     var hot = handsontable({
-      data: createSpreadsheetData(5, 2),
+      data: Handsontable.helper.createSpreadsheetData(5, 2),
       allowInvalid: false,
       validator: function (value, callback) {
         callback(true);
@@ -455,7 +455,7 @@ describe('Core_validate', function () {
     var onBeforeChange = jasmine.createSpy('onBeforeChange');
 
     var hot = handsontable({
-      data: createSpreadsheetData(5, 2),
+      data: Handsontable.helper.createSpreadsheetData(5, 2),
       allowInvalid: false,
       validator: function (value, callback) {
         setTimeout(function () {
@@ -485,7 +485,7 @@ describe('Core_validate', function () {
     var onAfterChange = jasmine.createSpy('onAfterChange');
 
     var hot = handsontable({
-      data: createSpreadsheetData(5, 2),
+      data: Handsontable.helper.createSpreadsheetData(5, 2),
       allowInvalid: false,
       validator: function (value, callback) {
         callback(true);
@@ -513,7 +513,7 @@ describe('Core_validate', function () {
     var onAfterChange = jasmine.createSpy('onAfterChange');
 
     var hot = handsontable({
-      data: createSpreadsheetData(5, 2),
+      data: Handsontable.helper.createSpreadsheetData(5, 2),
       allowInvalid: false,
       validator: function (value, callback) {
         setTimeout(function () {
@@ -555,7 +555,7 @@ describe('Core_validate', function () {
 
 
     handsontable({
-      data: createSpreadsheetData(5, 2),
+      data: Handsontable.helper.createSpreadsheetData(5, 2),
       allowInvalid: false,
       afterValidate: onAfterValidate,
       afterChange: onAfterChange,
@@ -577,16 +577,16 @@ describe('Core_validate', function () {
 
     expect(document.activeElement.nodeName).toEqual('TEXTAREA');
 
-    waitsFor(function(){
+    waitsFor(function() {
       return onAfterValidate.calls.length > 0 && onAfterChange.calls.length > 0;
     }, 'Cell validation and value change', 1000);
 
     runs(function () {
       expect(isEditorVisibleBeforeChange).toBe(true);
-      expect(isEditorVisibleAfterChange).toBe(false);
+      expect(isEditorVisibleAfterChange).toBe(true);
+      expect(isEditorVisible()).toBe(false);
       expect(document.activeElement.nodeName).toEqual('BODY');
     });
-
   });
 
   it('should validate edited cell after selecting another cell', function () {
@@ -595,7 +595,7 @@ describe('Core_validate', function () {
     var validatedValue;
 
     handsontable({
-      data: createSpreadsheetData(5, 2),
+      data: Handsontable.helper.createSpreadsheetData(5, 2),
       allowInvalid: false,
       afterValidate: function () {
         beforeElement = document.activeElement;
@@ -636,7 +636,7 @@ describe('Core_validate', function () {
     var validationResult;
 
     handsontable({
-      data: createSpreadsheetData(5, 2),
+      data: Handsontable.helper.createSpreadsheetData(5, 2),
       allowInvalid: false,
       validator: function (value, callback) {
         setTimeout(function () {
@@ -673,7 +673,7 @@ describe('Core_validate', function () {
     var validationResult;
 
     handsontable({
-      data: createSpreadsheetData(5, 2),
+      data: Handsontable.helper.createSpreadsheetData(5, 2),
       allowInvalid: false,
       validator: function (value, callback) {
         validated = true;
@@ -707,7 +707,7 @@ describe('Core_validate', function () {
     var validationResult;
 
     handsontable({
-      data: createSpreadsheetData(5, 2),
+      data: Handsontable.helper.createSpreadsheetData(5, 2),
       allowInvalid: false,
       validator: function (value, callback) {
         setTimeout(function () {
@@ -747,7 +747,7 @@ describe('Core_validate', function () {
     var validationResult;
 
     handsontable({
-      data: createSpreadsheetData(5, 2),
+      data: Handsontable.helper.createSpreadsheetData(5, 2),
       allowInvalid: false,
       validator: function (value, callback) {
         validationResult = value.length == 2;
@@ -789,7 +789,7 @@ describe('Core_validate', function () {
     var validationResult;
 
     handsontable({
-      data: createSpreadsheetData(5, 2),
+      data: Handsontable.helper.createSpreadsheetData(5, 2),
       allowInvalid: true,
       validator: function (value, callback) {
         setTimeout(function () {
@@ -827,7 +827,7 @@ describe('Core_validate', function () {
     var validationResult;
 
     handsontable({
-      data: createSpreadsheetData(5, 2),
+      data: Handsontable.helper.createSpreadsheetData(5, 2),
       allowInvalid: false,
       validator: function (value, callback) {
         setTimeout(function () {
@@ -882,7 +882,7 @@ describe('Core_validate', function () {
     var validationResult;
 
     handsontable({
-      data: createSpreadsheetData(5, 2),
+      data: Handsontable.helper.createSpreadsheetData(5, 2),
       allowInvalid: false,
       validator: function (value, callback) {
         setTimeout(function () {
@@ -921,7 +921,7 @@ describe('Core_validate', function () {
 
     runs(function () {
       expect(validationResult).toBe(false);
-      expect(getDataAtCell(0, 0)).toEqual('A0');
+      expect(getDataAtCell(0, 0)).toEqual('A1');
     });
 
   });
@@ -1129,11 +1129,10 @@ describe('Core_validate', function () {
     keyDownUp('enter'); //should be accepted but only after 100 ms
     expect(getSelected()).toEqual([3, 2, 3, 2]);
 
-
-    this.$container.trigger(new $.Event('keydown', {keyCode: Handsontable.helper.keyCode.ARROW_LEFT}));
-    this.$container.trigger(new $.Event('keyup', {keyCode: Handsontable.helper.keyCode.ARROW_LEFT}));
-    this.$container.trigger(new $.Event('keydown', {keyCode: Handsontable.helper.keyCode.ARROW_LEFT}));
-    this.$container.trigger(new $.Event('keyup', {keyCode: Handsontable.helper.keyCode.ARROW_LEFT}));
+    this.$container.simulate('keydown', {keyCode: Handsontable.helper.keyCode.ARROW_LEFT});
+    this.$container.simulate('keyup', {keyCode: Handsontable.helper.keyCode.ARROW_LEFT});
+    this.$container.simulate('keydown', {keyCode: Handsontable.helper.keyCode.ARROW_LEFT});
+    this.$container.simulate('keyup', {keyCode: Handsontable.helper.keyCode.ARROW_LEFT});
 
     expect(isEditorVisible()).toBe(true);
     expect(getSelected()).toEqual([3, 0, 3, 0]);

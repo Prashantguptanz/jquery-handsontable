@@ -62,16 +62,14 @@ $(window).load(function () {
     totalColumns: function () {
       return arr[0].length;
     },
-    height: 600,
-    width: 600,
     rowHeaders: [function (row, TH) {
       TH.innerHTML = row + 1;
     }],
     columnHeaders: [function (col, TH) {
       TH.innerHTML = col + 1;
     }],
-    selections: {
-      current: {
+    selections: [
+      {
         className: 'current',
         border: {
           width: 2,
@@ -79,7 +77,7 @@ $(window).load(function () {
           style: 'solid'
         }
       }
-    },
+    ],
     onCellMouseDown: function (event, coords, TD) {
       if (wt.selections.area.isSelected(coords, TD) > -1) {
         wt.selections.area.remove(coords, TD);

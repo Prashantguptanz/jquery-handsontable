@@ -6,7 +6,7 @@
  * @param {Number} col
  * @param {String|Number} prop Row object property name
  * @param value Value to render (remember to escape unsafe HTML before inserting to DOM!)
- * @param {Object} cellProperties Cell properites (shared by cell renderer and editor)
+ * @param {Object} cellProperties Cell properties (shared by cell renderer and editor)
  */
 (function (Handsontable) {
   'use strict';
@@ -21,17 +21,21 @@
 
     var escaped = Handsontable.helper.stringify(value);
 
+    if(!instance.getSettings().trimWhitespace) {
+      escaped = escaped.replace(/ /g, String.fromCharCode(160));
+    }
+
     if (cellProperties.rendererTemplate) {
-      instance.view.wt.wtDom.empty(TD);
+      Handsontable.Dom.empty(TD);
       var TEMPLATE = document.createElement('TEMPLATE');
       TEMPLATE.setAttribute('bind', '{{}}');
       TEMPLATE.innerHTML = cellProperties.rendererTemplate;
       HTMLTemplateElement.decorate(TEMPLATE);
-      TEMPLATE.model = instance.getDataAtRow(row);
+      TEMPLATE.model = instance.getSourceDataAtRow(row);
       TD.appendChild(TEMPLATE);
     }
     else {
-      instance.view.wt.wtDom.fastInnerText(TD, escaped); //this is faster than innerHTML. See: https://github.com/warpech/jquery-handsontable/wiki/JavaScript-&-DOM-performance-tips
+      Handsontable.Dom.fastInnerText(TD, escaped); //this is faster than innerHTML. See: https://github.com/handsontable/handsontable/wiki/JavaScript-&-DOM-performance-tips
     }
 
   };

@@ -5,11 +5,10 @@
   <title>Highlight current row or column - Handsontable</title>
 
   <!--
-  Loading Handsontable (full distribution that includes all dependencies apart from jQuery)
+  Loading Handsontable (full distribution that includes all dependencies)
   -->
-  <script data-jsfiddle="common" src="../lib/jquery.min.js"></script>
-  <script data-jsfiddle="common" src="../dist/jquery.handsontable.full.js"></script>
-  <link data-jsfiddle="common" rel="stylesheet" media="screen" href="../dist/jquery.handsontable.full.css">
+  <script data-jsfiddle="common" src="../dist/handsontable.full.js"></script>
+  <link data-jsfiddle="common" rel="stylesheet" media="screen" href="../dist/handsontable.full.css">
 
   <!--
   Loading demo dependencies. They are used here only to enhance the examples on this page
@@ -75,7 +74,7 @@
           <div id="example1"></div>
 
           <p>
-            <button name="dump" data-dump="#example1" title="Prints current data source to Firebug/Chrome Dev Tools">
+            <button name="dump" data-dump="#example1" data-instance="hot" title="Prints current data source to Firebug/Chrome Dev Tools">
               Dump
               data to console
             </button>
@@ -101,13 +100,15 @@
 
           <script data-jsfiddle="example1">
             var data = [
-              ["", "Kia", "Nissan", "Toyota", "Honda"],
-              ["2008", 10, 11, 12, 13],
-              ["2009", 20, 11, 14, 13],
-              ["2010", 30, 15, 12, 13]
-            ];
+                ['', 'Kia', 'Nissan', 'Toyota', 'Honda'],
+                ['2008', 10, 11, 12, 13],
+                ['2009', 20, 11, 14, 13],
+                ['2009', 30, 15, 12, 13]
+              ],
+              container = document.getElementById('example1'),
+              hot;
 
-            $("#example1").handsontable({
+            hot = Handsontable(container, {
               data: data,
               minRows: 5,
               minCols: 6,
@@ -115,17 +116,17 @@
               currentRowClassName: 'currentRow',
               currentColClassName: 'currentCol',
               autoWrapRow: true,
+              rowHeaders: true,
               colHeaders: true
             });
 
-            $("#example1").handsontable('selectCell', 3, 3);
+            hot.selectCell(3,3);
           </script>
         </div>
       </div>
     </div>
 
-        <div class="footer-text">Handsontable &copy; 2012 Marcin Warpechowski and contributors.<br> Code and documentation
-          licensed under the The MIT License.
+        <div class="footer-text">
         </div>
       </div>
 

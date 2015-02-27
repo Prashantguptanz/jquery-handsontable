@@ -1,11 +1,9 @@
 function Walkontable(settings) {
-  var that = this,
-    originalHeaders = [];
+  var originalHeaders = [];
 
   this.guid = 'wt_' + walkontableRandomString(); //this is the namespace for global events
 
   //bootstrap from settings
-  this.wtDom = new WalkontableDom();
   if (settings.cloneSource) {
     this.cloneSource = settings.cloneSource;
     this.cloneOverlay = settings.cloneOverlay;
@@ -13,15 +11,18 @@ function Walkontable(settings) {
     this.wtTable = new WalkontableTable(this, settings.table);
     this.wtScroll = new WalkontableScroll(this);
     this.wtViewport = settings.cloneSource.wtViewport;
+    this.wtEvent = new WalkontableEvent(this);
+    this.selections = this.cloneSource.selections;
   }
   else {
     this.wtSettings = new WalkontableSettings(this, settings);
     this.wtTable = new WalkontableTable(this, settings.table);
     this.wtScroll = new WalkontableScroll(this);
     this.wtViewport = new WalkontableViewport(this);
-    this.wtScrollbars = new WalkontableScrollbars(this);
-    this.wtWheel = new WalkontableWheel(this);
     this.wtEvent = new WalkontableEvent(this);
+    this.selections = this.getSetting('selections');
+
+    this.wtScrollbars = new WalkontableScrollbars(this);
   }
 
   //find original headers
@@ -31,77 +32,92 @@ function Walkontable(settings) {
     }
     if (!this.getSetting('columnHeaders').length) {
       this.update('columnHeaders', [function (column, TH) {
-        that.wtDom.fastInnerText(TH, originalHeaders[column]);
+        Handsontable.Dom.fastInnerText(TH, originalHeaders[column]);
       }]);
     }
   }
 
-  //initialize selections
-  this.selections = {};
-  var selectionsSettings = this.getSetting('selections');
-  if (selectionsSettings) {
-    for (var i in selectionsSettings) {
-      if (selectionsSettings.hasOwnProperty(i)) {
-        this.selections[i] = new WalkontableSelection(this, selectionsSettings[i]);
-      }
-    }
-  }
+
 
   this.drawn = false;
   this.drawInterrupted = false;
-
-  //at this point the cached row heights may be invalid, but it is better not to reset the cache, which could cause scrollbar jumping when there are multiline cells outside of the rendered part of the table
-  /*if (window.Handsontable) {
-    Handsontable.PluginHooks.add('beforeChange', function () {
-      if (that.rowHeightCache) {
-        that.rowHeightCache.length = 0;
-      }
-    });
-
-  }*/
 }
 
-Walkontable.prototype.draw = function (selectionsOnly) {
+/**
+ * Force rerender of Walkontable
+ * @param fastDraw {Boolean} When TRUE, try to refresh only the positions of borders without rerendering the data.
+ *                           It will only work if WalkontableTable.draw() does not force rendering anyway
+ * @returns {Walkontable}
+ */
+Walkontable.prototype.draw = function (fastDraw) {
   this.drawInterrupted = false;
-  if (!selectionsOnly && !this.wtDom.isVisible(this.wtTable.TABLE)) {
+  if (!fastDraw && !Handsontable.Dom.isVisible(this.wtTable.TABLE)) {
     this.drawInterrupted = true; //draw interrupted because TABLE is not visible
     return;
   }
 
-  this.getSetting('beforeDraw', !selectionsOnly);
-  selectionsOnly = selectionsOnly && this.getSetting('offsetRow') === this.lastOffsetRow && this.getSetting('offsetColumn') === this.lastOffsetColumn;
-  if (this.drawn) { //fix offsets that might have changed
-    this.scrollVertical(0);
-    this.scrollHorizontal(0);
-  }
-  this.lastOffsetRow = this.getSetting('offsetRow');
-  this.lastOffsetColumn = this.getSetting('offsetColumn');
-  this.wtTable.draw(selectionsOnly);
-  if (!this.cloneSource) {
-    this.getSetting('onDraw',  !selectionsOnly);
-  }
+  this.wtTable.draw(fastDraw);
+
   return this;
+};
+
+/**
+ * Returns the TD at coords. If topmost is set to true, returns TD from the topmost overlay layer,
+ * if not set or set to false, returns TD from the master table.
+ * @param {WalkontableCellCoords} coords
+ * @param {Boolean} topmost
+ * @returns {Object}
+ */
+Walkontable.prototype.getCell = function (coords, topmost) {
+  if(!topmost) {
+    return this.wtTable.getCell(coords);
+  } else {
+    var fixedRows = this.wtSettings.getSetting('fixedRowsTop')
+      , fixedColumns = this.wtSettings.getSetting('fixedColumnsLeft');
+
+    if(coords.row < fixedRows && coords.col < fixedColumns) {
+      return this.wtScrollbars.corner.clone.wtTable.getCell(coords);
+    } else if(coords.row < fixedRows) {
+      return this.wtScrollbars.vertical.clone.wtTable.getCell(coords);
+    } else if (coords.col < fixedColumns) {
+      return this.wtScrollbars.horizontal.clone.wtTable.getCell(coords);
+    } else {
+      return this.wtTable.getCell(coords);
+    }
+  }
 };
 
 Walkontable.prototype.update = function (settings, value) {
   return this.wtSettings.update(settings, value);
 };
 
-Walkontable.prototype.scrollVertical = function (delta) {
-  var result = this.wtScroll.scrollVertical(delta);
-
+/**
+ * Scroll the viewport to a row at the given index in the data source
+ * @param row
+ * @returns {Walkontable}
+ */
+Walkontable.prototype.scrollVertical = function (row) {
+  this.wtScrollbars.vertical.scrollTo(row);
   this.getSetting('onScrollVertically');
-
-  return result;
+  return this;
 };
 
-Walkontable.prototype.scrollHorizontal = function (delta) {
-  var result = this.wtScroll.scrollHorizontal(delta);
-
+/**
+ * Scroll the viewport to a column at the given index in the data source
+ * @param row
+ * @returns {Walkontable}
+ */
+Walkontable.prototype.scrollHorizontal = function (column) {
+  this.wtScrollbars.horizontal.scrollTo(column);
   this.getSetting('onScrollHorizontally');
-
-  return result;
+  return this;
 };
+
+/**
+ * Scrolls the viewport to a cell (rerenders if needed)
+ * @param {WalkontableCellCoords} coords
+ * @returns {Walkontable}
+ */
 
 Walkontable.prototype.scrollViewport = function (coords) {
   this.wtScroll.scrollViewport(coords);
@@ -110,15 +126,15 @@ Walkontable.prototype.scrollViewport = function (coords) {
 
 Walkontable.prototype.getViewport = function () {
   return [
-    this.wtTable.rowFilter.visibleToSource(0),
-    this.wtTable.columnFilter.visibleToSource(0),
+    this.wtTable.getFirstVisibleRow(),
+    this.wtTable.getFirstVisibleColumn(),
     this.wtTable.getLastVisibleRow(),
     this.wtTable.getLastVisibleColumn()
   ];
 };
 
-Walkontable.prototype.getSetting = function (key, param1, param2, param3) {
-  return this.wtSettings.getSetting(key, param1, param2, param3);
+Walkontable.prototype.getSetting = function (key, param1, param2, param3, param4) {
+  return this.wtSettings.getSetting(key, param1, param2, param3, param4); //this is faster than .apply - https://github.com/handsontable/handsontable/wiki/JavaScript-&-DOM-performance-tips
 };
 
 Walkontable.prototype.hasSetting = function (key) {
@@ -126,8 +142,9 @@ Walkontable.prototype.hasSetting = function (key) {
 };
 
 Walkontable.prototype.destroy = function () {
-  $(document.body).off('.' + this.guid);
   this.wtScrollbars.destroy();
-  clearTimeout(this.wheelTimeout);
-  this.wtEvent && this.wtEvent.destroy();
+
+  if ( this.wtEvent ) {
+    this.wtEvent.destroy();
+  }
 };

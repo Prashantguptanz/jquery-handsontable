@@ -51,85 +51,66 @@ DragToScroll.prototype.check = function (x, y) {
   this.callback(diffX, diffY);
 };
 
-var listening = false;
 var dragToScroll;
 var instance;
 
 if (typeof Handsontable !== 'undefined') {
   var setupListening = function (instance) {
+    instance.dragToScrollListening = false;
     var scrollHandler = instance.view.wt.wtScrollbars.vertical.scrollHandler; //native scroll
     dragToScroll = new DragToScroll();
     if (scrollHandler === window) {
       //not much we can do currently
       return;
     }
-    else if (scrollHandler) {
-      dragToScroll.setBoundaries(scrollHandler.getBoundingClientRect());
-    }
     else {
-      dragToScroll.setBoundaries(instance.$table[0].getBoundingClientRect());
+      dragToScroll.setBoundaries(scrollHandler.getBoundingClientRect());
     }
 
     dragToScroll.setCallback(function (scrollX, scrollY) {
       if (scrollX < 0) {
-        if (scrollHandler) {
           scrollHandler.scrollLeft -= 50;
-        }
-        else {
-          instance.view.wt.scrollHorizontal(-1).draw();
-        }
       }
       else if (scrollX > 0) {
-        if (scrollHandler) {
           scrollHandler.scrollLeft += 50;
-        }
-        else {
-          instance.view.wt.scrollHorizontal(1).draw();
-        }
       }
 
       if (scrollY < 0) {
-        if (scrollHandler) {
           scrollHandler.scrollTop -= 20;
-        }
-        else {
-          instance.view.wt.scrollVertical(-1).draw();
-        }
       }
       else if (scrollY > 0) {
-        if (scrollHandler) {
           scrollHandler.scrollTop += 20;
-        }
-        else {
-          instance.view.wt.scrollVertical(1).draw();
-        }
       }
     });
 
-    listening = true;
+    instance.dragToScrollListening = true;
   };
 
-  Handsontable.PluginHooks.add('afterInit', function () {
-    $(document).on('mouseup.' + this.guid, function () {
-      listening = false;
+  Handsontable.hooks.add('afterInit', function () {
+    var instance = this;
+    var eventManager = Handsontable.eventManager(this);
+
+    eventManager.addEventListener(document,'mouseup', function () {
+      instance.dragToScrollListening = false;
     });
 
-    $(document).on('mousemove.' + this.guid, function (event) {
-      if (listening) {
+    eventManager.addEventListener(document,'mousemove', function (event) {
+      if (instance.dragToScrollListening) {
         dragToScroll.check(event.clientX, event.clientY);
       }
     });
   });
 
-  Handsontable.PluginHooks.add('destroy', function () {
-    $(document).off('.' + this.guid);
+  Handsontable.hooks.add('afterDestroy', function () {
+    var eventManager = Handsontable.eventManager(this);
+    eventManager.clear();
   });
 
-  Handsontable.PluginHooks.add('afterOnCellMouseDown', function () {
+  Handsontable.hooks.add('afterOnCellMouseDown', function () {
     setupListening(this);
   });
 
-  Handsontable.PluginHooks.add('afterOnCellCornerMouseDown', function () {
+  Handsontable.hooks.add('afterOnCellCornerMouseDown', function () {
     setupListening(this);
   });
 

@@ -1,91 +1,87 @@
 function WalkontableScrollbars(instance) {
   this.instance = instance;
-  if (instance.getSetting('nativeScrollbars')) {
-    instance.update('scrollbarWidth', instance.wtDom.getScrollbarWidth());
-    instance.update('scrollbarHeight', instance.wtDom.getScrollbarWidth());
-    this.vertical = new WalkontableVerticalScrollbarNative(instance);
-    this.horizontal = new WalkontableHorizontalScrollbarNative(instance);
-    this.corner = new WalkontableCornerScrollbarNative(instance);
-    if (instance.getSetting('debug')) {
-      this.debug = new WalkontableDebugOverlay(instance);
-    }
-    this.registerListeners();
+  instance.update('scrollbarWidth', Handsontable.Dom.getScrollbarWidth());
+  instance.update('scrollbarHeight', Handsontable.Dom.getScrollbarWidth());
+  this.vertical = new WalkontableVerticalScrollbarNative(instance);
+  this.horizontal = new WalkontableHorizontalScrollbarNative(instance);
+  this.corner = new WalkontableCornerScrollbarNative(instance);
+  if (instance.getSetting('debug')) {
+    this.debug = new WalkontableDebugOverlay(instance);
   }
-  else {
-    this.vertical = new WalkontableVerticalScrollbar(instance);
-    this.horizontal = new WalkontableHorizontalScrollbar(instance);
-  }
+  this.registerListeners();
 }
 
 WalkontableScrollbars.prototype.registerListeners = function () {
   var that = this;
 
-  var oldVerticalScrollPosition
-    , oldHorizontalScrollPosition
-    , oldBoxTop
-    , oldBoxLeft
-    , oldBoxWidth
-    , oldBoxHeight;
+  this.refreshAll = function refreshAll() {
+    if(!that.instance.drawn) {
+      return;
+    }
 
-  function refreshAll() {
     if (!that.instance.wtTable.holder.parentNode) {
       //Walkontable was detached from DOM, but this handler was not removed
       that.destroy();
       return;
     }
 
-    that.vertical.windowScrollPosition = that.vertical.getScrollPosition();
-    that.horizontal.windowScrollPosition = that.horizontal.getScrollPosition();
-    that.box = that.instance.wtTable.hider.getBoundingClientRect();
+    that.instance.draw(true);
+    that.vertical.onScroll();
+    that.horizontal.onScroll();
+  };
 
-    if((that.box.width !== oldBoxWidth || that.box.height !== oldBoxHeight) && that.instance.rowHeightCache) {
-      //that.instance.rowHeightCache.length = 0; //at this point the cached row heights may be invalid, but it is better not to reset the cache, which could cause scrollbar jumping when there are multiline cells outside of the rendered part of the table
-      oldBoxWidth = that.box.width;
-      oldBoxHeight = that.box.height;
-      that.instance.draw();
-    }
+  var eventManager = Handsontable.eventManager(that.instance);
 
-    if (that.vertical.windowScrollPosition !== oldVerticalScrollPosition || that.horizontal.windowScrollPosition !== oldHorizontalScrollPosition || that.box.top !== oldBoxTop || that.box.left !== oldBoxLeft) {
-      that.vertical.onScroll();
-      that.horizontal.onScroll(); //it's done here to make sure that all onScroll's are executed before changing styles
-
-      that.vertical.react();
-      that.horizontal.react(); //it's done here to make sure that all onScroll's are executed before changing styles
-
-      oldVerticalScrollPosition = that.vertical.windowScrollPosition;
-      oldHorizontalScrollPosition = that.horizontal.windowScrollPosition;
-      oldBoxTop = that.box.top;
-      oldBoxLeft = that.box.left;
-    }
-  }
-
-  var $window = $(window);
-  this.vertical.$scrollHandler.on('scroll.' + this.instance.guid, refreshAll);
+  eventManager.addEventListener(this.vertical.scrollHandler, 'scroll', this.refreshAll);
   if (this.vertical.scrollHandler !== this.horizontal.scrollHandler) {
-    this.horizontal.$scrollHandler.on('scroll.' + this.instance.guid, refreshAll);
+    eventManager.addEventListener(this.horizontal.scrollHandler, 'scroll', this.refreshAll);
   }
 
   if (this.vertical.scrollHandler !== window && this.horizontal.scrollHandler !== window) {
-    $window.on('scroll.' + this.instance.guid, refreshAll);
+    eventManager.addEventListener(window,'scroll', this.refreshAll);
   }
-  $window.on('load.' + this.instance.guid, refreshAll);
-  $window.on('resize.' + this.instance.guid, refreshAll);
-  $(document).on('ready.' + this.instance.guid, refreshAll);
-  setInterval(refreshAll, 100); //Marcin - only idea I have to reposition scrollbars on CSS change of the container (container was moved using some styles after page was loaded)
 };
 
 WalkontableScrollbars.prototype.destroy = function () {
-  this.vertical && this.vertical.destroy();
-  this.horizontal && this.horizontal.destroy();
+  var eventManager = Handsontable.eventManager(this.instance);
+
+  if (this.vertical) {
+    this.vertical.destroy();
+    eventManager.removeEventListener(this.vertical.scrollHandler,'scroll', this.refreshAll);
+  }
+  if (this.horizontal) {
+    this.horizontal.destroy();
+    eventManager.removeEventListener(this.horizontal.scrollHandler,'scroll', this.refreshAll);
+  }
+  eventManager.removeEventListener(window,'scroll', this.refreshAll);
+  if (this.corner ) {
+    this.corner.destroy();
+  }
+  if (this.debug) {
+    this.debug.destroy();
+  }
 };
 
-WalkontableScrollbars.prototype.refresh = function (selectionsOnly) {
-  this.horizontal && this.horizontal.readSettings();
-  this.vertical && this.vertical.readSettings();
-  this.horizontal && this.horizontal.prepare();
-  this.vertical && this.vertical.prepare();
-  this.horizontal && this.horizontal.refresh(selectionsOnly);
-  this.vertical && this.vertical.refresh(selectionsOnly);
-  this.corner && this.corner.refresh(selectionsOnly);
-  this.debug && this.debug.refresh(selectionsOnly);
+WalkontableScrollbars.prototype.refresh = function (fastDraw) {
+  if (this.horizontal) {
+    this.horizontal.refresh(fastDraw);
+  }
+  if (this.vertical) {
+    this.vertical.refresh(fastDraw);
+  }
+  if (this.corner) {
+    this.corner.refresh(fastDraw);
+  }
+  if (this.debug) {
+    this.debug.refresh(fastDraw);
+  }
+};
+
+WalkontableScrollbars.prototype.applyToDOM = function () {
+  if (this.horizontal) {
+    this.horizontal.applyToDOM();
+  }
+  if (this.vertical) {
+    this.vertical.applyToDOM();
+  }
 };
